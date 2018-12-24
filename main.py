@@ -52,16 +52,18 @@ def dataProcess():
 # Thread for running server
 class serverThread(threading.Thread):
     def run(self):
-        try:
-            # Starts webserver
-            dataLock.acquire()
-            server = HTTPServer(('', data["settings"]["port"]), serverHandler)
-            logger('Started httpserver on port ' + str(data["settings"]["port"]))
-            dataLock.release()
-            server.serve_forever()
-        except KeyboardInterrupt:
-            logger("Closing")
-            sys.exit()
+        # Starts webserver
+        dataLock.acquire()
+        self.server = HTTPServer(('', data["settings"]["port"]), serverHandler)
+        logger('Started httpserver on port ' + str(data["settings"]["port"]))
+        dataLock.release()
+        self.server.serve_forever()
+
+
+    def stop(self):
+        if self.server:
+            self.server.shutdown()
+            self.server = None
 
 # Handles the requests
 class serverHandler(BaseHTTPRequestHandler):
@@ -101,10 +103,6 @@ class serverHandler(BaseHTTPRequestHandler):
         elif self.path == "/api/data/":
             contentType="text/json"
             content = dataProcess()
-        elif self.path == "/api/exit/":
-            contentType="text/plain"
-            content="1"
-            sys.exit()
         else:
             status=404
             contentType="text/plain"
@@ -115,6 +113,9 @@ class serverHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', contentType)
         self.end_headers()
         self.wfile.write(content.encode("utf-8"))
+
+        if self.path == "/api/exit":
+            thread.interrupt_main()
         return
 
     # POST requests
@@ -208,94 +209,101 @@ if __name__ == '__main__':
 
     # Starts monitoring the tex file
     while True:
-        result = subprocess.run(['perl', 'texcount.pl', data["settings"]["texFile"]], stdout=subprocess.PIPE)
-        texCount = result.stdout.decode("utf-8")
+        try:
+            result = subprocess.run(['perl', 'texcount.pl', data["settings"]["texFile"]], stdout=subprocess.PIPE)
+            texCount = result.stdout.decode("utf-8")
 
-        if re.search("File not found", texCount) is not None:
-            logger("Failed to find tex file, invalid perms?")
+            if re.search("File not found", texCount) is not None:
+                logger("Failed to find tex file, invalid perms?")
+                time.sleep(float(data["settings"]["period"]))
+                continue
+
+            # Checks for changes, saves data storage and makes graph neater:
+            hash = hashlib.sha1(texCount.encode("utf-8")).hexdigest()
+            if hash == data["hash"]:
+                time.sleep(float(data["settings"]["period"]))
+                continue
+
+            # Gets timestamp
+            timestamp = str(int(time.time()))
+
+            # Parses outpout into dataset
+            textWords = re.search("Words in text: (\d+)", texCount).group(1)
+            headerWords = re.search("Words in headers: (\d+)", texCount).group(1)
+            extraWords = re.search("Words outside text \(captions, etc.\): (\d+)", texCount).group(1)
+
+            dataset = {"totals": {"total": int(textWords),
+                                  "headers": int(headerWords),
+                                  "captions": int(extraWords)
+                                  }
+                       }
+
+            # Grabs the top subcount as it doesn't follow normol patterns:
+            subcount = re.search("(\d+)\+(\d+)\+(\d+) \W+\d+/\d+/\d+/\d+\) _top_", texCount)
+            dataset["_top_"] = {"total": int(subcount.group(1)),
+                                "headers": int(subcount.group(2)),
+                                "captions": int(subcount.group(3))
+                                }
+
+            # Grabs the breakdown
+            regex = re.finditer("(\d+)\+(\d+)\+(\d+) \W+\d+/\d+/\d+/\d+\)\W+(.*):(.*)", texCount)
+
+            # Creates unique identifier
+            part = ""
+            chapter = ""
+            section = ""
+            subsection = ""
+
+            # Duplicates past identifiers
+            pastIDs = data["identifiers"]
+            ids = []
+
+            for match in regex:
+                if match.group(4) == "Part":
+                    part = match.group(5)
+                    chapter = section = subsection = ""
+                elif match.group(4) == "Chapter":
+                    chapter = match.group(5)
+                    section = subsection = ""
+                elif match.group(4) == "Section":
+                    section = match.group(5)
+                    subsection = ""
+                elif match.group(4) == "Subsection":
+                    subsection = match.group(5)
+
+                id = part + "//" + chapter + "//" + section + "//" + subsection
+
+                dataset[id] = {"total": int(match.group(1)),
+                               "headers": int(match.group(2)),
+                               "captions": int(match.group(3)),
+                               "name": match.group(5)
+                               }
+
+                ids.append(id)
+                if id in pastIDs:
+                    pastIDs.remove(id)
+
+            # Sets all remaining pastids to 0
+            for id in pastIDs:
+                dataset[id] = {"total": 0,
+                               "headers": 0,
+                               "captions": 0
+                               }
+
+            data["identifiers"] = ids
+            data["data"][timestamp] = dataset
+            data["hash"] = hash
+
+            dataFile = open(file, "w+")
+            dataLock.acquire()
+            dataFile.write(json.dumps(data))
+            dataLock.release()
+            dataFile.close()
+
             time.sleep(float(data["settings"]["period"]))
-            continue
-
-        # Checks for changes, saves data storage and makes graph neater:
-        hash = hashlib.sha1(texCount.encode("utf-8")).hexdigest()
-        if hash == data["hash"]:
-            time.sleep(float(data["settings"]["period"]))
-            continue
-
-        # Gets timestamp
-        timestamp = str(int(time.time()))
-
-        # Parses outpout into dataset
-        textWords = re.search("Words in text: (\d+)", texCount).group(1)
-        headerWords = re.search("Words in headers: (\d+)", texCount).group(1)
-        extraWords = re.search("Words outside text \(captions, etc.\): (\d+)", texCount).group(1)
-
-        dataset = {"totals": {"total": int(textWords),
-                              "headers": int(headerWords),
-                              "captions": int(extraWords)
-                              }
-                   }
-
-        # Grabs the top subcount as it doesn't follow normol patterns:
-        subcount = re.search("(\d+)\+(\d+)\+(\d+) \W+\d+/\d+/\d+/\d+\) _top_", texCount)
-        dataset["_top_"] = {"total": int(subcount.group(1)),
-                            "headers": int(subcount.group(2)),
-                            "captions": int(subcount.group(3))
-                            }
-
-        # Grabs the breakdown
-        regex = re.finditer("(\d+)\+(\d+)\+(\d+) \W+\d+/\d+/\d+/\d+\)\W+(.*):(.*)", texCount)
-
-        # Creates unique identifier
-        part = ""
-        chapter = ""
-        section = ""
-        subsection = ""
-
-        # Duplicates past identifiers
-        pastIDs = data["identifiers"]
-        ids = []
-
-        for match in regex:
-            if match.group(4) == "Part":
-                part = match.group(5)
-                chapter = section = subsection = ""
-            elif match.group(4) == "Chapter":
-                chapter = match.group(5)
-                section = subsection = ""
-            elif match.group(4) == "Section":
-                section = match.group(5)
-                subsection = ""
-            elif match.group(4) == "Subsection":
-                subsection = match.group(5)
-
-            id = part + "//" + chapter + "//" + section + "//" + subsection
-
-            dataset[id] = {"total": int(match.group(1)),
-                           "headers": int(match.group(2)),
-                           "captions": int(match.group(3)),
-                           "name": match.group(5)
-                           }
-
-            ids.append(id)
-            if id in pastIDs:
-                pastIDs.remove(id)
-
-        # Sets all remaining pastids to 0
-        for id in pastIDs:
-            dataset[id] = {"total": 0,
-                           "headers": 0,
-                           "captions": 0
-                           }
-
-        data["identifiers"] = ids
-        data["data"][timestamp] = dataset
-        data["hash"] = hash
-
-        dataFile = open(file, "w+")
-        dataLock.acquire()
-        dataFile.write(json.dumps(data))
-        dataLock.release()
-        dataFile.close()
-
-        time.sleep(float(data["settings"]["period"]))
+        except KeyboardInterrupt:
+            logger("Closing down")
+        finally:
+            # Does not save the data, as there is potential for data races
+            serv.stop()
+            sys.exit(1)
