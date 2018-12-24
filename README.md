@@ -1,9 +1,12 @@
 # Tex Progress
 Charts latex file progress in a browser using texcount as the backend
 
+![Example Chart](.github/example_chart.png?raw=true "Example Chart")
+
 ## Requirements
  - perl - StrawberryPerl, ActivePerl etc
  - python3
+
 
 ## Usage
 To start a new instance:
