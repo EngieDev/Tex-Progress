@@ -31,8 +31,12 @@ def dataProcess():
 
             if id not in chartData:
                 chartData[id] = {}
-                chartData[id]["values"] = [0] * (len(timestamps))
-                # Instantiates zero array of same length of timestamp
+                if len(timestamps) == 1:
+                    chartData[id]["values"] = []
+                else:
+                    chartData[id]["values"] = [0] * (len(timestamps)-1)
+                    # Instantiates zero array of same length of timestamp
+
 
             if "name" in record[id].keys():
                 chartData[id]["name"] = record[id]["name"]
