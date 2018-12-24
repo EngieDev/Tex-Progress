@@ -241,7 +241,7 @@ if __name__ == '__main__':
     # Starts monitoring the tex file
     while True:
         try:
-            run = texCommand
+            run = texCommand[:]
             run.append(data["settings"]["texFile"])
             result = subprocess.run(run, stdout=subprocess.PIPE)
             texCount = result.stdout.decode("utf-8")
