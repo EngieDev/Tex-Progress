@@ -318,6 +318,7 @@ if __name__ == '__main__':
         except KeyboardInterrupt:
             logger("Closing down")
             serv.stop()
+            sys.exit(1)
         except Exception as e:
             print("Error:")
             print(e)
