@@ -1,5 +1,5 @@
 # Tex Progress
-Charts latex file progress in a browser using texcount as the base
+Charts latex file progress in a browser using texcount as the backend
 
 ## Requirements
  - perl - StrawberryPerl, ActivePerl etc
@@ -7,9 +7,10 @@ Charts latex file progress in a browser using texcount as the base
 
 ## Usage
 To start a new instance:
- - `python main.py new data.json`
- - Open up the browser to [here](http://localhost:8090)
- - Change the settings to fit
- 
- To continue an existing instance:
- - `python main.py data.json`
+ - `python main.py new [json] [port] [texFile]`
+
+    i.e: `python main.py new data.json 8090 essay.tex`
+ - Open up the browser to [localhost:8090](http://localhost:8090) (sub in port chosen)
+
+To continue an existing instance:
+ - `python main.py [json]`

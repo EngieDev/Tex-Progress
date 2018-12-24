@@ -178,8 +178,19 @@ if __name__ == '__main__':
     file = sys.argv[1]
 
     if file == "new":
+        if len(sys.argv) != 5:
+            logger("Invalid arguments: main.py new [json] [port] [texFile]")
+            sys.exit(0)
+
         file = sys.argv[2]
+        port = int(sys.argv[3])
+        texFile = sys.argv[4]
+
+        data["settings"]["port"] = port
+        data["settings"]["texFile"] = texFile
+
         logger("Creating new data file")
+
         # Checks file exists
         try:
             fh = open(file, 'r')
