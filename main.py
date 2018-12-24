@@ -138,6 +138,7 @@ class serverHandler(BaseHTTPRequestHandler):
                 dataLock.acquire()
                 data["settings"]["texFile"] = s["texFile"]
                 data["settings"]["period"] = s["period"]
+                data["settings"]["port"] = s["port"]
                 dataLock.release()
 
                 dataFile = open(file, "w+")
@@ -145,7 +146,7 @@ class serverHandler(BaseHTTPRequestHandler):
                 dataFile.write(json.dumps(data))
                 dataLock.release()
                 dataFile.close()
-                logger("Saved settings.")
+                logger("Saved settings - A restart is required if port has been changed.")
             except Exception as e:
                 logger("Failed to save: " + str(e))
             return

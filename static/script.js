@@ -18,6 +18,7 @@ function applySettings() {
   jQuery.getJSON("/api/settings/", function(data){
     $("#inputTexFile").val(data.texFile);
     $("#inputPeriod").val(data.period);
+    $("#inputPort").val(data.port);
   });
 }
 
@@ -29,7 +30,8 @@ $("#settings").submit(function(e) {
        dataType: "json",
        data: JSON.stringify({
          "texFile": $("#inputTexFile").val(),
-         "period":  $("#inputPeriod").val()
+         "period":  $("#inputPeriod").val(),
+         "port":  $("#inputPort").val()
        }),
        success: function(data){
          applySettings();
