@@ -260,59 +260,67 @@ if __name__ == '__main__':
                                   }
                        }
 
-            # Grabs the top subcount as it doesn't follow normol patterns:
-            subcount = re.search("(\d+)\+(\d+)\+(\d+) \W+\d+/\d+/\d+/\d+\) _top_", texCount)
-            dataset["_top_"] = {"total": int(subcount.group(1)),
-                                "headers": int(subcount.group(2)),
-                                "captions": int(subcount.group(3))
-                                }
-
-            # Grabs the breakdown
-            regex = re.finditer("(\d+)\+(\d+)\+(\d+) \W+\d+/\d+/\d+/\d+\)\W+(.*):(.*)", texCount)
-
-            # Creates unique identifier
-            part = ""
-            chapter = ""
-            section = ""
-            subsection = ""
-
-            # Duplicates past identifiers
-            dataLock.acquire()
-            pastIDs = data["identifiers"]
-            dataLock.release()
             ids = []
 
-            for match in regex:
-                if match.group(4) == "Part":
-                    part = match.group(5)
-                    chapter = section = subsection = ""
-                elif match.group(4) == "Chapter":
-                    chapter = match.group(5)
-                    section = subsection = ""
-                elif match.group(4) == "Section":
-                    section = match.group(5)
-                    subsection = ""
-                elif match.group(4) == "Subsection":
-                    subsection = match.group(5)
+            # If there are no words, the subcount wont show, so we sub a  _top_, then skip rest
+            if int(textWords) == 0:
+                dataset["_top_"] = {"total": int(textWords),
+                                    "headers": int(headerWords),
+                                    "captions": int(extraWords)
+                                    }
+            else:
+                # Grabs the top subcount as it doesn't follow normol patterns:
+                subcount = re.search("(\d+)\+(\d+)\+(\d+) \W+\d+/\d+/\d+/\d+\) _top_", texCount)
+                dataset["_top_"] = {"total": int(subcount.group(1)),
+                                    "headers": int(subcount.group(2)),
+                                    "captions": int(subcount.group(3))
+                                    }
 
-                id = part + "//" + chapter + "//" + section + "//" + subsection
+                # Grabs the breakdown
+                regex = re.finditer("(\d+)\+(\d+)\+(\d+) \W+\d+/\d+/\d+/\d+\)\W+(.*):(.*)", texCount)
 
-                dataset[id] = {"total": int(match.group(1)),
-                               "headers": int(match.group(2)),
-                               "captions": int(match.group(3)),
-                               "name": match.group(5)
-                               }
+                # Creates unique identifier
+                part = ""
+                chapter = ""
+                section = ""
+                subsection = ""
 
-                ids.append(id)
-                if id in pastIDs:
-                    pastIDs.remove(id)
+                # Duplicates past identifiers
+                dataLock.acquire()
+                pastIDs = data["identifiers"]
+                dataLock.release()
 
-            # Sets all remaining pastids to 0
-            for id in pastIDs:
-                dataset[id] = {"total": 0,
-                               "headers": 0,
-                               "captions": 0
-                               }
+                for match in regex:
+                    if match.group(4) == "Part":
+                        part = match.group(5)
+                        chapter = section = subsection = ""
+                    elif match.group(4) == "Chapter":
+                        chapter = match.group(5)
+                        section = subsection = ""
+                    elif match.group(4) == "Section":
+                        section = match.group(5)
+                        subsection = ""
+                    elif match.group(4) == "Subsection":
+                        subsection = match.group(5)
+
+                    id = part + "//" + chapter + "//" + section + "//" + subsection
+
+                    dataset[id] = {"total": int(match.group(1)),
+                                   "headers": int(match.group(2)),
+                                   "captions": int(match.group(3)),
+                                   "name": match.group(5)
+                                   }
+
+                    ids.append(id)
+                    if id in pastIDs:
+                        pastIDs.remove(id)
+
+                # Sets all remaining pastids to 0
+                for id in pastIDs:
+                    dataset[id] = {"total": 0,
+                                   "headers": 0,
+                                   "captions": 0
+                                   }
 
             dataLock.acquire()
             data["identifiers"] = ids
