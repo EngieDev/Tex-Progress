@@ -1,5 +1,5 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import threading, json, sys, time, datetime, re
+import threading, json, sys, time, datetime, re, hashlib
 import subprocess
 
 # Logs message for webserver and prints to console
@@ -153,7 +153,8 @@ data = {
         "period": 60
         },
     "data": {},
-    "identifiers": [] # Used for detecting past sections
+    "identifiers": [], # Used for detecting past sections
+    "hash": "" # Used to check for texcount changes in output
 }
 log = []
 
@@ -212,6 +213,13 @@ if __name__ == '__main__':
 
         if re.search("File not found", texCount) is not None:
             logger("Failed to find tex file, invalid perms?")
+            time.sleep(float(data["settings"]["period"]))
+            continue
+
+        # Checks for changes, saves data storage and makes graph neater:
+        hash = hashlib.sha1(texCount.encode("utf-8")).hexdigest()
+        logger(hash)
+        if hash == data["hash"]:
             time.sleep(float(data["settings"]["period"]))
             continue
 
@@ -283,6 +291,7 @@ if __name__ == '__main__':
 
         data["identifiers"] = ids
         data["data"][timestamp] = dataset
+        data["hash"] = hash
 
         dataFile = open(file, "w+")
         dataLock.acquire()
