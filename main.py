@@ -59,7 +59,6 @@ class serverThread(threading.Thread):
         dataLock.release()
         self.server.serve_forever()
 
-
     def stop(self):
         if self.server:
             self.server.shutdown()
@@ -213,15 +212,20 @@ if __name__ == '__main__':
             result = subprocess.run(['perl', 'texcount.pl', data["settings"]["texFile"]], stdout=subprocess.PIPE)
             texCount = result.stdout.decode("utf-8")
 
+            # Gets sleep time
+            dataLock.acquire()
+            sleep = float(data["settings"]["period"])
+            dataLock.release()
+
             if re.search("File not found", texCount) is not None:
                 logger("Failed to find tex file, invalid perms?")
-                time.sleep(float(data["settings"]["period"]))
+                time.sleep(sleep)
                 continue
 
             # Checks for changes, saves data storage and makes graph neater:
             hash = hashlib.sha1(texCount.encode("utf-8")).hexdigest()
             if hash == data["hash"]:
-                time.sleep(float(data["settings"]["period"]))
+                time.sleep(sleep)
                 continue
 
             # Gets timestamp
@@ -255,7 +259,9 @@ if __name__ == '__main__':
             subsection = ""
 
             # Duplicates past identifiers
+            dataLock.acquire()
             pastIDs = data["identifiers"]
+            dataLock.release()
             ids = []
 
             for match in regex:
@@ -290,9 +296,11 @@ if __name__ == '__main__':
                                "captions": 0
                                }
 
+            dataLock.acquire()
             data["identifiers"] = ids
             data["data"][timestamp] = dataset
             data["hash"] = hash
+            dataLock.release()
 
             dataFile = open(file, "w+")
             dataLock.acquire()
@@ -300,7 +308,7 @@ if __name__ == '__main__':
             dataLock.release()
             dataFile.close()
 
-            time.sleep(float(data["settings"]["period"]))
+            time.sleep(sleep)
         except KeyboardInterrupt:
             logger("Closing down")
         finally:
