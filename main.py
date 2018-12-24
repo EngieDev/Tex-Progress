@@ -262,8 +262,8 @@ if __name__ == '__main__':
 
             ids = []
 
-            # If there are no words, the subcount wont show, so we sub a  _top_, then skip rest
-            if int(textWords) == 0:
+            # Checks for subcount, if not found sub in _top_ and skip rest of checkss
+            if re.search("Subcounts:", texCount) is None:
                 dataset["_top_"] = {"total": int(textWords),
                                     "headers": int(headerWords),
                                     "captions": int(extraWords)
