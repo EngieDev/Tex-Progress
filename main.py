@@ -165,6 +165,14 @@ data = {
 }
 log = []
 
+# Variations on the texcount script
+texCommands = [
+                ["texcount"],
+                ["perl", "texcount.pl"],
+                ["texcount.pl"]
+            ]
+texCommand = []
+
 # lock for conccurrent data access
 dataLock = threading.Lock()
 logLock = threading.Lock()
@@ -213,12 +221,18 @@ if __name__ == '__main__':
         sys.exit()
     logger("Data loaded")
 
-    # Checks for perl:
-    result = subprocess.run(['perl', 'texcount.pl'], stdout=subprocess.PIPE)
-    if re.match("TeXcount version", result.stdout.decode("utf-8")) is None:
-        print("Error with perl or missing texcount.pl script:")
-        print(result.stdout)
-        sys.exit(2)
+    # Checks for texcount depending on environment:
+    for texcon in texCommands:
+        result = subprocess.run(texcon, stdout=subprocess.PIPE)
+        if re.match("TeXcount version", result.stdout.decode("utf-8")) is not None:
+            texCommand = texcon
+            break
+
+    if texCommand == []:
+        print("Unable to confirm perl or texcount exists.")
+        sys.exit(0)
+
+    logger("Using " + " ".join(texcon) + " to parse the tex files.")
 
     # Starts server in background
     serv = serverThread()
@@ -227,7 +241,9 @@ if __name__ == '__main__':
     # Starts monitoring the tex file
     while True:
         try:
-            result = subprocess.run(['perl', 'texcount.pl', data["settings"]["texFile"]], stdout=subprocess.PIPE)
+            run = texCommand
+            run.append(data["settings"]["texFile"])
+            result = subprocess.run(run, stdout=subprocess.PIPE)
             texCount = result.stdout.decode("utf-8")
 
             # Gets sleep time
