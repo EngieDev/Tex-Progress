@@ -342,3 +342,5 @@ if __name__ == '__main__':
         except Exception as e:
             print("Error:")
             print(e)
+            serv.stop()
+            sys.exit(0)
