@@ -138,7 +138,7 @@ class serverHandler(BaseHTTPRequestHandler):
                 dataLock.acquire()
                 data["settings"]["texFile"] = s["texFile"]
                 data["settings"]["period"] = s["period"]
-                data["settings"]["port"] = s["port"]
+                data["settings"]["port"] = int(s["port"])
                 dataLock.release()
 
                 dataFile = open(file, "w+")
