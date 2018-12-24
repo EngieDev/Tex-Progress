@@ -56,17 +56,22 @@ def dataProcess():
 # Thread for running server
 class serverThread(threading.Thread):
     def run(self):
-        # Starts webserver
-        dataLock.acquire()
-        self.server = HTTPServer(('', data["settings"]["port"]), serverHandler)
-        logger('Started httpserver on port ' + str(data["settings"]["port"]))
-        dataLock.release()
-        self.server.serve_forever()
+        try:
+            # Starts webserver
+            dataLock.acquire()
+            self.server = HTTPServer(('', data["settings"]["port"]), serverHandler)
+            logger('Started httpserver on port ' + str(data["settings"]["port"]))
+            dataLock.release()
+            self.server.serve_forever()
+        except Exception as e:
+            print("An error occured starting webserver:")
+            print(e)
 
     def stop(self):
         if self.server:
             self.server.shutdown()
             self.server = None
+            print("Shut down webserver")
 
 # Handles the requests
 class serverHandler(BaseHTTPRequestHandler):
@@ -116,9 +121,6 @@ class serverHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', contentType)
         self.end_headers()
         self.wfile.write(content.encode("utf-8"))
-
-        if self.path == "/api/exit":
-            thread.interrupt_main()
         return
 
     # POST requests
@@ -315,7 +317,7 @@ if __name__ == '__main__':
             time.sleep(sleep)
         except KeyboardInterrupt:
             logger("Closing down")
-        finally:
-            # Does not save the data, as there is potential for data races
             serv.stop()
-            sys.exit(1)
+        except Exception as e:
+            print("Error:")
+            print(e)
