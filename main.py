@@ -218,7 +218,6 @@ if __name__ == '__main__':
 
         # Checks for changes, saves data storage and makes graph neater:
         hash = hashlib.sha1(texCount.encode("utf-8")).hexdigest()
-        logger(hash)
         if hash == data["hash"]:
             time.sleep(float(data["settings"]["period"]))
             continue
