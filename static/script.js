@@ -3,7 +3,8 @@ $(document).ready(function() {
   log();
   drawChart();
 
-  setInterval(drawChart, 10000);
+  window.colours = {}
+  setInterval(drawChart, 30000);
   setInterval(log, 10000);
 });
 
@@ -93,7 +94,13 @@ function drawChart() {
     });
 
     for(var key in data.data){
-      colour = randomRGB();
+      if(key in window.colours){
+        colour = window.colours[key]
+      } else {
+        colour = randomRGB();
+        window.colours[key] = colour
+      }
+
       d = {
         label: data.data[key]["name"],
         data: data.data[key]["values"],
@@ -103,16 +110,23 @@ function drawChart() {
       datasets.push(d);
     }
 
-    config = {
-      type: "line",
-      data: {
-        datasets: datasets,
-        labels: labels,
-      },
-      options: options
-    };
-
     ctx = document.getElementById("chart").getContext("2d");
-    window.chart = new Chart(ctx, config);
+
+    if(typeof window.countChart == "undefined"){
+      config = {
+        type: "line",
+        data: {
+          datasets: datasets,
+          labels: labels,
+        },
+        options: options
+      };
+
+      window.countChart = new Chart(ctx, config);
+    } else {
+      window.countChart.data.labels = labels
+      window.countChart.data.datasets = datasets
+      window.countChart.update()
+    }
   });
 }
