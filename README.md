@@ -17,3 +17,15 @@ To start a new instance:
 
 To continue an existing instance:
  - `python main.py [json]`
+
+## Notes
+### Abstract
+To count abstracts as a separate section:
+```
+%TC:break Section: Abstract
+\begin{abstract}
+Abstract
+\end{abstract}
+%TC:break _main_
+```
+This can be used to define own sections for the wordcounts
