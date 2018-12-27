@@ -18,6 +18,7 @@ def dataProcess():
 
     chartData = {}
     timestamps = []
+    total = 0
 
     for timestamp in d.keys():
         time = timestamp
@@ -27,6 +28,7 @@ def dataProcess():
 
         for id in record.keys():
             if id == "totals":
+                total = int(record[id]["total"])+int(record[id]["headers"])
                 continue
 
             if id not in chartData:
@@ -51,7 +53,7 @@ def dataProcess():
             if id not in record.keys():
                 chartData[id]["values"].append(0)
 
-    return json.dumps({"data": chartData, "timestamps": timestamps})
+    return json.dumps({"data": chartData, "timestamps": timestamps, "total": total})
 
 # Thread for running server
 class serverThread(threading.Thread):

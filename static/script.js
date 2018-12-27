@@ -91,6 +91,8 @@ function drawChart() {
   var labels = [];
 
   jQuery.getJSON("/api/data/", function(data){
+    $("#wordCount").html(data["total"])
+
     data.timestamps.forEach(function(timestamp){
       labels.push(moment(parseInt(timestamp)*1000));
     });
