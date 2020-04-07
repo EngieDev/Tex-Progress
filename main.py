@@ -266,9 +266,9 @@ if __name__ == '__main__':
             timestamp = str(int(time.time()))
 
             # Parses outpout into dataset
-            textWords = re.search("Words in text: (\d+)", texCount).group(1)
-            headerWords = re.search("Words in headers: (\d+)", texCount).group(1)
-            extraWords = re.search("Words outside text \(captions, etc.\): (\d+)", texCount).group(1)
+            textWords = re.search(r"Words in text: (\d+)", texCount).group(1)
+            headerWords = re.search(r"Words in headers: (\d+)", texCount).group(1)
+            extraWords = re.search(r"Words outside text \(captions, etc.\): (\d+)", texCount).group(1)
 
             dataset = {"totals": {"total": int(textWords),
                                   "headers": int(headerWords),
@@ -286,14 +286,14 @@ if __name__ == '__main__':
                                     }
             else:
                 # Grabs the top subcount as it doesn't follow normol patterns:
-                subcount = re.search("(\d+)\+(\d+)\+(\d+) \W+\d+/\d+/\d+/\d+\) _top_", texCount)
+                subcount = re.search(r"(\d+)\+(\d+)\+(\d+) \W+\d+/\d+/\d+/\d+\) _top_", texCount)
                 dataset["_top_"] = {"total": int(subcount.group(1)),
                                     "headers": int(subcount.group(2)),
                                     "captions": int(subcount.group(3))
                                     }
 
                 # Grabs the breakdown
-                regex = re.finditer("(\d+)\+(\d+)\+(\d+) \W+\d+/\d+/\d+/\d+\)\W+(.*):(.*)", texCount)
+                regex = re.finditer(r"(\d+)\+(\d+)\+(\d+) \W+\d+/\d+/\d+/\d+\)\W+(.*):(.*)", texCount)
 
                 # Creates unique identifier
                 part = ""
