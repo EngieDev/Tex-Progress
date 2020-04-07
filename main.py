@@ -21,8 +21,6 @@ def dataProcess():
     total = 0
 
     for timestamp in d.keys():
-        time = timestamp
-
         record = d[timestamp]
         timestamps.append(timestamp)
 
